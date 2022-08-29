@@ -8,6 +8,7 @@ class MButton extends JButton {
     private int i, j;
     private int number;
     private boolean flagged = false;
+    private boolean focused = false;
 
 
     public boolean isFlagged() {
@@ -18,6 +19,13 @@ class MButton extends JButton {
         this.flagged = flagged;
     }
 
+    public boolean isFocused() {
+        return focused;
+    }
+
+    public void setFocused(boolean focused) {
+        this.focused = focused;
+    }
 
     public int getNumber() {
         return number;
@@ -42,11 +50,11 @@ class MButton extends JButton {
     }
 
 
-    public int getTileJ() {
+    public int getJ() {
         return j;
     }
 
-    public int getTileI() {
+    public int getI() {
         return i;
     }
 

@@ -8,16 +8,18 @@ import java.util.Random;
 import java.util.Set;
 import javax.swing.*;
 
-
+// todo win function, timer, bomb counter
 public class MainFrame extends JFrame {
 
-    private MButton[][] buttons = new MButton[16][16];
+    private int gridLen = 16; // 16
+    private int bombNr = 40; // 40
+    private MButton[][] buttons = new MButton[gridLen][gridLen];
     private JLabel lblTitle = new JLabel();
     private Container mainPanel = this.getContentPane();
     private JPanel buttonsPanel = new JPanel();
     private JPanel titlePanel = new JPanel();
-    private int bombNr = 40;
-    
+    private MouseEvent lastEvt;
+
     public MainFrame() throws HeadlessException {
         
         initFrame();
@@ -43,7 +45,7 @@ public class MainFrame extends JFrame {
 
     private void initButtons() {
         
-        buttonsPanel.setLayout(new GridLayout(16, 16));
+        buttonsPanel.setLayout(new GridLayout(gridLen, gridLen));
 
         // i -> y ; j -> x
         for(int i = 0; i < buttons.length; ++i) {
@@ -70,16 +72,13 @@ public class MainFrame extends JFrame {
             }
         }
 
-
         this.add(buttonsPanel);
-
-
     }
 
     private void addListenersToButton(MButton b) {
         b.addMouseListener(new MouseAdapter() {
             @Override
-            public void mousePressed(MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 MButton b = (MButton)e.getSource();
                 if(b.isOpened()) return;
 
@@ -87,25 +86,69 @@ public class MainFrame extends JFrame {
                     if(b.isFlagged()) return;
 
                     if(b.isBomb()) {
-                        bombTriggered(b);
+                        stopGame(b);
                     } else {
-                        revealClearSection(b.getTileI(), b.getTileJ());
+                        revealClearSection(b.getI(), b.getJ());
                     }
 
-                } else if(SwingUtilities.isRightMouseButton(e)) {
+                } else if(SwingUtilities.isRightMouseButton(e)
+                            && lastEvt != e) {
+
                     toggleFlagged(b);
                 }
+//                lastEvt = e;
 
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                lastEvt = e;
+                MButton b = (MButton)e.getSource();
+                if(!b.isOpened()) {
+                    mouseClicked(e);
+                    return;
+                }
+                b.setFocused(true);
+
+                setTilesColour(b, Color.white);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+//                lastEvt = e;
+                MButton b = (MButton)e.getSource();
+                if(!b.isOpened()) return;
+                if(!b.isFocused()) return;
+                b.setFocused(false);
+                setTilesColour(b, Color.gray);
             }
         });
     }
 
+    private void setTilesColour(MButton b, Color c) {
+        int i = b.getI();
+        int j = b.getJ();
+
+        for(int d = 0; d < 8; ++d) {
+            int ni = i + di[d];
+            int nj = j + dj[d];
+
+            if(!checkTile(ni, nj)
+                || buttons[ni][nj].isOpened()
+                || buttons[ni][nj].isFlagged())
+                continue;
+
+            buttons[ni][nj].setBackground(c);
+        }
+    }
+
     // stops game
-    private void bombTriggered(MButton b) {
+    private void stopGame(MButton b) {
         revealBoard();
         JOptionPane.showMessageDialog(
                 this,
-                "Game Over\nRestart Game?\n",
+                "Game Over\n" +
+                        "Restart Game?",
                 "",
                 JOptionPane.ERROR_MESSAGE);
 
@@ -113,11 +156,8 @@ public class MainFrame extends JFrame {
     }
 
     private void restartGame() {
-        this.remove(buttonsPanel);
-        buttonsPanel = new JPanel();
-
-        buttons = new MButton[16][16];
-        initButtons();
+        main(new String[1]);
+        this.dispose();
     }
 
     private void revealBoard() {
@@ -134,18 +174,47 @@ public class MainFrame extends JFrame {
         if(b.isOpened()) return;
         boolean flag = !b.isFlagged();
         b.setFlagged(flag);
-        if(flag)
+
+        if(flag) {
             b.setText("🚩");
-        else
+            bombNr--;
+        } else {
             b.setText("");
+            bombNr++;
+        }
+        checkFinish();
+    }
+
+    private void checkFinish() {
+        for(int i = 0; i < buttons.length; ++i) {
+            for(int j = 0; j < buttons[i].length; ++j) {
+                if(buttons[i][j].isBomb() && !buttons[i][j].isFlagged())
+                    return;
+            }
+        }
+
+        revealBoard();
+
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                "Congrats! You won.\n" +
+                        "Play again?",
+                "",
+                JOptionPane.YES_NO_OPTION);
+
+        if(result == JOptionPane.NO_OPTION)
+            System.exit(0);
+
+        restartGame();
+
     }
 
 
-    int[] di = {-1, -1, 0, 1, 1,  1,  0, -1};
-    int[] dj = { 0,  1, 1, 1, 0, -1, -1, -1};
+    final int[] di = {-1, -1, 0, 1, 1,  1,  0, -1};
+    final int[] dj = { 0,  1, 1, 1, 0, -1, -1, -1};
 
     private boolean checkTile(int i, int j) {
-        if(i < 0 || i > 15 || j < 0 || j > 15)
+        if(i < 0 || i > gridLen - 1 || j < 0 || j > gridLen - 1)
             return false;
         return true;
     }
@@ -214,8 +283,8 @@ public class MainFrame extends JFrame {
         Set<Point> controlSet = new HashSet<>();
 
         while(bombs > 0) {
-            int x = rand.nextInt(16);
-            int y = rand.nextInt(16);
+            int x = rand.nextInt(gridLen);
+            int y = rand.nextInt(gridLen);
             Point p = new Point(x, y);
 
             if(!controlSet.contains(p)) {
