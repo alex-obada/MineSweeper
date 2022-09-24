@@ -8,16 +8,17 @@ import java.util.Random;
 import java.util.Set;
 import javax.swing.*;
 
-// todo win function, timer, bomb counter
+// todo timer, bomb counter
 public class MainFrame extends JFrame {
 
-    private int gridLen = 16; // 16
-    private int bombNr = 40; // 40
-    private MButton[][] buttons = new MButton[gridLen][gridLen];
-    private JLabel lblTitle = new JLabel();
-    private Container mainPanel = this.getContentPane();
-    private JPanel buttonsPanel = new JPanel();
-    private JPanel titlePanel = new JPanel();
+    private final int gridLen = 16; // 16
+    private final int bombNr = 40; // 40
+    private int bombCounter = bombNr;
+    private final MButton[][] buttons = new MButton[gridLen][gridLen];
+    private final JLabel lblTitle = new JLabel();
+    private final Container mainPanel = this.getContentPane();
+    private final JPanel buttonsPanel = new JPanel();
+    private final JPanel titlePanel = new JPanel();
     private MouseEvent lastEvt;
 
     public MainFrame() throws HeadlessException {
@@ -27,13 +28,7 @@ public class MainFrame extends JFrame {
         initButtons();
     }
     
-    public static void main(String args[]) {
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new MainFrame().setVisible(true);
-            }
-        });
-    }
+
 
     private void initFrame() {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -50,29 +45,33 @@ public class MainFrame extends JFrame {
         // i -> y ; j -> x
         for(int i = 0; i < buttons.length; ++i) {
             for(int j = 0; j < buttons[i].length; ++j) {
-                buttons[i][j] = new MButton();
-                buttons[i][j].setBackground(Color.gray);
-                buttons[i][j].setTileI(i);
-                buttons[i][j].setTileJ(j);
-                buttons[i][j].setBorder(BorderFactory.createRaisedBevelBorder());
+                MButton button;
 
-                addListenersToButton(buttons[i][j]);
+                button = new MButton();
+                button.setBackground(Color.gray);
+                button.setTileI(i);
+                button.setTileJ(j);
+                button.setBorder(BorderFactory.createRaisedBevelBorder());
 
-                buttonsPanel.add(buttons[i][j]);
+                addListenersToButton(button);
+
+                buttonsPanel.add(button);
+                buttons[i][j] = button;
             }
         }
 
-        generateBombs(bombNr);
+        generateBombs();
 
-        for(int i = 0; i < buttons.length; ++i) {
-            for(int j = 0; j < buttons[i].length; ++j) {
-                if(!buttons[i][j].isBomb()) {
-                    buttons[i][j].setNumber(getSurrMinesNr(i, j));
-                }
-            }
-        }
+        generateNumbers();
 
         this.add(buttonsPanel);
+    }
+
+    private void generateNumbers() {
+        for(int i = 0; i < buttons.length; ++i)
+            for(int j = 0; j < buttons[i].length; ++j)
+                if(!buttons[i][j].isBomb())
+                    buttons[i][j].setNumber(getSurrMinesNr(i, j));
     }
 
     private void addListenersToButton(MButton b) {
@@ -86,7 +85,7 @@ public class MainFrame extends JFrame {
                     if(b.isFlagged()) return;
 
                     if(b.isBomb()) {
-                        stopGame(b);
+                        stopGame();
                     } else {
                         revealClearSection(b.getI(), b.getJ());
                     }
@@ -96,7 +95,6 @@ public class MainFrame extends JFrame {
 
                     toggleFlagged(b);
                 }
-//                lastEvt = e;
 
             }
 
@@ -115,7 +113,6 @@ public class MainFrame extends JFrame {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-//                lastEvt = e;
                 MButton b = (MButton)e.getSource();
                 if(!b.isOpened()) return;
                 if(!b.isFocused()) return;
@@ -143,7 +140,7 @@ public class MainFrame extends JFrame {
     }
 
     // stops game
-    private void stopGame(MButton b) {
+    private void stopGame() {
         revealBoard();
         JOptionPane.showMessageDialog(
                 this,
@@ -156,19 +153,24 @@ public class MainFrame extends JFrame {
     }
 
     private void restartGame() {
-        main(new String[1]);
-        this.dispose();
+
+        for(MButton[] array : buttons)
+            for(MButton button : array)
+                button.reset();
+
+        bombCounter = bombNr;
+        generateBombs();
+        generateNumbers();
+
     }
 
     private void revealBoard() {
-        for(int i = 0; i < buttons.length; ++i) {
-            for(int j = 0; j < buttons[i].length; ++j) {
-                if(buttons[i][j].isOpened()) continue;
-                showTile(buttons[i][j]);
+        for(MButton[] array : buttons)
+            for(MButton button : array) {
+                if(button.isOpened()) continue;
+                showTile(button);
             }
-        }
     }
-
 
     private void toggleFlagged(MButton b) {
         if(b.isOpened()) return;
@@ -177,21 +179,21 @@ public class MainFrame extends JFrame {
 
         if(flag) {
             b.setText("🚩");
-            bombNr--;
+            bombCounter--;
         } else {
             b.setText("");
-            bombNr++;
+            bombCounter++;
         }
         checkFinish();
     }
 
     private void checkFinish() {
-        for(int i = 0; i < buttons.length; ++i) {
-            for(int j = 0; j < buttons[i].length; ++j) {
-                if(buttons[i][j].isBomb() && !buttons[i][j].isFlagged())
+        if(bombCounter != 0) return;
+        for(MButton[] array : buttons)
+            for(MButton button : array) {
+                if(button.isBomb() && !button.isFlagged())
                     return;
             }
-        }
 
         revealBoard();
 
@@ -214,9 +216,8 @@ public class MainFrame extends JFrame {
     final int[] dj = { 0,  1, 1, 1, 0, -1, -1, -1};
 
     private boolean checkTile(int i, int j) {
-        if(i < 0 || i > gridLen - 1 || j < 0 || j > gridLen - 1)
-            return false;
-        return true;
+        return i >= 0 && i <= gridLen - 1
+                && j >= 0 && j <= gridLen - 1;
     }
 
     private void revealClearSection(int i, int j) {
@@ -278,7 +279,8 @@ public class MainFrame extends JFrame {
         
     }
 
-    private void generateBombs(int bombs) {
+    private void generateBombs() {
+        int bombs = bombNr;
         Random rand = new Random();
         Set<Point> controlSet = new HashSet<>();
 

@@ -1,6 +1,7 @@
 package game;
 
 import javax.swing.JButton;
+import java.awt.*;
 
 class MButton extends JButton {
     private boolean opened = false;
@@ -10,6 +11,15 @@ class MButton extends JButton {
     private boolean flagged = false;
     private boolean focused = false;
 
+    public void reset() {
+        opened = false;
+        bomb = false;
+        flagged = false;
+        focused = false;
+        number = 0;
+        this.setText("");
+        this.setBackground(Color.gray);
+    }
 
     public boolean isFlagged() {
         return flagged;
