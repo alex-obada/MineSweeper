@@ -13,7 +13,8 @@ public class MainFrame extends JFrame {
 
     private final int gridLen = 16; // 16
     private final int bombNr = 40; // 40
-    private int bombCounter = bombNr;
+    private       int bombCounter = bombNr;
+
     private final MButton[][] buttons = new MButton[gridLen][gridLen];
     private final JLabel lblTitle = new JLabel();
     private final Container mainPanel = this.getContentPane();
@@ -27,8 +28,6 @@ public class MainFrame extends JFrame {
         initTitleBar();
         initButtons();
     }
-    
-
 
     private void initFrame() {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -61,7 +60,6 @@ public class MainFrame extends JFrame {
         }
 
         generateBombs();
-
         generateNumbers();
 
         this.add(buttonsPanel);
@@ -76,6 +74,7 @@ public class MainFrame extends JFrame {
 
     private void addListenersToButton(MButton b) {
         b.addMouseListener(new MouseAdapter() {
+
             @Override
             public void mouseClicked(MouseEvent e) {
                 MButton b = (MButton)e.getSource();
@@ -95,7 +94,6 @@ public class MainFrame extends JFrame {
 
                     toggleFlagged(b);
                 }
-
             }
 
             @Override
@@ -130,7 +128,7 @@ public class MainFrame extends JFrame {
             int ni = i + di[d];
             int nj = j + dj[d];
 
-            if(!checkTile(ni, nj)
+            if(isInvalidTile(ni, nj)
                 || buttons[ni][nj].isOpened()
                 || buttons[ni][nj].isFlagged())
                 continue;
@@ -145,7 +143,7 @@ public class MainFrame extends JFrame {
         JOptionPane.showMessageDialog(
                 this,
                 "Game Over\n" +
-                        "Restart Game?",
+                "Restart Game?",
                 "",
                 JOptionPane.ERROR_MESSAGE);
 
@@ -190,17 +188,16 @@ public class MainFrame extends JFrame {
     private void checkFinish() {
         if(bombCounter != 0) return;
         for(MButton[] array : buttons)
-            for(MButton button : array) {
+            for(MButton button : array) 
                 if(button.isBomb() && !button.isFlagged())
                     return;
-            }
 
         revealBoard();
 
         int result = JOptionPane.showConfirmDialog(
                 this,
                 "Congrats! You won.\n" +
-                        "Play again?",
+                "Play again?",
                 "",
                 JOptionPane.YES_NO_OPTION);
 
@@ -211,17 +208,16 @@ public class MainFrame extends JFrame {
 
     }
 
-
     final int[] di = {-1, -1, 0, 1, 1,  1,  0, -1};
     final int[] dj = { 0,  1, 1, 1, 0, -1, -1, -1};
 
-    private boolean checkTile(int i, int j) {
-        return i >= 0 && i <= gridLen - 1
-                && j >= 0 && j <= gridLen - 1;
+    private boolean isInvalidTile(int i, int j) {
+        return i < 0 || i > gridLen - 1
+                || j < 0 || j > gridLen - 1;
     }
 
     private void revealClearSection(int i, int j) {
-        if(!checkTile(i, j) || buttons[i][j].isOpened()) return;
+        if(isInvalidTile(i, j) || buttons[i][j].isOpened()) return;
         if(buttons[i][j].getNumber() != 0) {
             showTile(buttons[i][j]);
             return;
@@ -260,7 +256,7 @@ public class MainFrame extends JFrame {
             int nj = j + dj[d];
 
             // out of bounds check
-            if(!checkTile(ni, nj)) continue;
+            if(isInvalidTile(ni, nj)) continue;
 
             if(buttons[ni][nj].isBomb())
                 count++;
@@ -296,10 +292,6 @@ public class MainFrame extends JFrame {
                 bombs--;
                 controlSet.add(p);
             }
-
-
         }
     }
-
-    
 }

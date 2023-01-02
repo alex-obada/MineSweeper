@@ -21,6 +21,10 @@ class MButton extends JButton {
         this.setBackground(Color.gray);
     }
 
+    public MButton() {
+        super();
+    }
+
     public boolean isFlagged() {
         return flagged;
     }
@@ -45,7 +49,6 @@ class MButton extends JButton {
         this.number = number;
     }
 
-
     public boolean isBomb() {
         return bomb;
     }
@@ -53,12 +56,6 @@ class MButton extends JButton {
     public void setBomb(boolean bomb) {
         this.bomb = bomb;
     }
-
-
-    public MButton() {
-        super();
-    }
-
 
     public int getJ() {
         return j;
@@ -83,8 +80,4 @@ class MButton extends JButton {
     public void setTileI(int i) {
         this.i = i;
     }
-
-
-
-
 }
