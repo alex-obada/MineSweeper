@@ -3,9 +3,7 @@ package game;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import javax.swing.*;
 
 // todo timer, bomb counter
@@ -17,16 +15,18 @@ public class MainFrame extends JFrame {
 
     private final MButton[][] buttons = new MButton[gridLen][gridLen];
     private final JLabel lblTitle = new JLabel();
+    private final JLabel timeLabel = new JLabel();
     private final Container mainPanel = this.getContentPane();
     private final JPanel buttonsPanel = new JPanel();
     private final JPanel titlePanel = new JPanel();
     private MouseEvent lastEvt;
+    private final TimeKeeper timeKeeper;
 
     public MainFrame() throws HeadlessException {
-        
         initFrame();
         initTitleBar();
         initButtons();
+        timeKeeper = new TimeKeeper(time -> timeLabel.setText(time + ""));
     }
 
     private void initFrame() {
@@ -106,7 +106,7 @@ public class MainFrame extends JFrame {
                 }
                 b.setFocused(true);
 
-                setTilesColour(b, Color.white);
+                setTilesColor(b, Color.white);
             }
 
             @Override
@@ -115,12 +115,12 @@ public class MainFrame extends JFrame {
                 if(!b.isOpened()) return;
                 if(!b.isFocused()) return;
                 b.setFocused(false);
-                setTilesColour(b, Color.gray);
+                setTilesColor(b, Color.gray);
             }
         });
     }
 
-    private void setTilesColour(MButton b, Color c) {
+    private void setTilesColor(MButton b, Color c) {
         int i = b.getI();
         int j = b.getJ();
 
@@ -139,6 +139,7 @@ public class MainFrame extends JFrame {
 
     // stops game
     private void stopGame() {
+        timeKeeper.stop();
         revealBoard();
         JOptionPane.showMessageDialog(
                 this,
@@ -159,7 +160,7 @@ public class MainFrame extends JFrame {
         bombCounter = bombNr;
         generateBombs();
         generateNumbers();
-
+        timeKeeper.resetTimer();
     }
 
     private void revealBoard() {
@@ -245,7 +246,6 @@ public class MainFrame extends JFrame {
         b.setBackground(Color.white);
         b.setText(b.getNumber() != 0 ? String.valueOf(b.getNumber()) : "");
         b.setOpened(true);
-
     }
 
     private int getSurrMinesNr(int i, int j) {
@@ -265,14 +265,23 @@ public class MainFrame extends JFrame {
         return count;
     }
 
+
     private void initTitleBar() {
         
+
+        titlePanel.setLayout(new BorderLayout());
+        titlePanel.setPreferredSize(new Dimension(0, 100));
+
+        timeLabel.setHorizontalAlignment(JLabel.RIGHT);
+
+        lblTitle.setText("bomb nr");
         lblTitle.setHorizontalAlignment(JLabel.CENTER);
-        lblTitle.setText("sal ba");
-//        lblTitle.setFont(new Font());
-        titlePanel.add(lblTitle);
+
+
+        titlePanel.add(lblTitle, BorderLayout.WEST);
+        titlePanel.add(timeLabel, BorderLayout.EAST);
+
         this.add(titlePanel, BorderLayout.NORTH);
-        
     }
 
     private void generateBombs() {
