@@ -6,7 +6,7 @@ import java.awt.*;
 class MButton extends JButton {
     private boolean opened = false;
     private boolean bomb;
-    private int i, j;
+    private int tileY, tileX;
     private int number;
     private boolean flagged = false;
     private boolean focused = false;
@@ -57,12 +57,12 @@ class MButton extends JButton {
         this.bomb = bomb;
     }
 
-    public int getJ() {
-        return j;
+    public int getTileX() {
+        return tileX;
     }
 
-    public int getI() {
-        return i;
+    public int getTileY() {
+        return tileY;
     }
 
     public boolean isOpened() {
@@ -73,11 +73,11 @@ class MButton extends JButton {
         this.opened = opened;
     }
 
-    public void setTileJ(int j) {
-        this.j = j;
+    public void setTileX(int x) {
+        this.tileX = x;
     }
 
-    public void setTileI(int i) {
-        this.i = i;
+    public void setTileY(int y) {
+        this.tileY = y;
     }
 }

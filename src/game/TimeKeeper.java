@@ -4,7 +4,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class TimeKeeper {
-    private final Timer timer = new Timer();
+    private Timer timer = new Timer();
     private int currentTime = 0;
     private boolean stop = false;
     private final ITimeKeeperCallBack callBack;
@@ -14,21 +14,25 @@ public class TimeKeeper {
         resetTimer();
     }
 
+    public int getTime() {
+        return currentTime;
+    }
+
     public void stop() {
-        if(!stop)
-            stop = true;
+        if(stop) return;
+
+        stop = true;
+        timer.cancel();
     }
 
     public void resetTimer() {
         currentTime = 0;
         stop = false;
-        timer.scheduleAtFixedRate(new TimerTask() {
+        (timer = new Timer()).scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 if(!stop)
                     callBack.run(currentTime++);
-                else
-                    this.cancel();
             }
         }, 0, 1000);
     }
