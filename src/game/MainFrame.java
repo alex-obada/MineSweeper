@@ -3,11 +3,14 @@ package game;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 
 public class MainFrame extends JFrame {
 
@@ -25,7 +28,9 @@ public class MainFrame extends JFrame {
     private final JPanel titlePanel = new JPanel();
     private MouseEvent lastEvt;
     private final TimeKeeper timeKeeper;
-    private Font font = null;
+    private Font titlePanelFont = null;
+    private BufferedImage restartImage = null;
+    private BufferedImage iconImage = null;
 
     public MainFrame() throws HeadlessException {
         loadResources();
@@ -36,31 +41,33 @@ public class MainFrame extends JFrame {
     }
 
     private void loadResources() {
-        File fontFile = new File("res/DS-DIGII.TTF");
-
         try {
-            font = Font.createFont(Font.TRUETYPE_FONT, fontFile);
+            File fontFile = new File("res/DS-DIGII.TTF");
+            titlePanelFont = Font.createFont(Font.TRUETYPE_FONT, fontFile);
+            titlePanelFont = titlePanelFont.deriveFont(Font.BOLD, 50);
+
+            restartImage = ImageIO.read(new File("res/flag.png"));
+            iconImage = ImageIO.read(new File("res/icon.png"));
         } catch (FontFormatException | IOException e) {
-            JOptionPane.showMessageDialog(mainPanel, "Could not load font.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(mainPanel, "Could not load resources.", "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
             System.exit(1);
         }
-
-        font = font.deriveFont(Font.BOLD, 50);
     }
 
     private void initFrame() {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setMinimumSize(new Dimension(310, 450));
         this.setSize(500, 600);
         this.setLayout(new BorderLayout());
         this.setLocationRelativeTo(null);
-        this.setTitle("MineSweeper");    
+        this.setTitle("MineSweeper");
+        this.setIconImage(iconImage);
     }
 
     private void initButtons() {
-        
         buttonsPanel.setLayout(new GridLayout(gridLen, gridLen));
 
-        // i -> y ; j -> x
         for(int y = 0; y < buttons.length; ++y) {
             for(int x = 0; x < buttons[y].length; ++x) {
                 MButton button;
@@ -287,30 +294,46 @@ public class MainFrame extends JFrame {
     }
 
     private void initTitleBar() {
-        titlePanel.setLayout(new BorderLayout());
+        titlePanel.setLayout(new GridLayout(1, 3));
         titlePanel.setPreferredSize(new Dimension(0, 100));
-
-
 
         timeLabel.setHorizontalAlignment(JLabel.RIGHT);
         timeLabel.setPreferredSize(new Dimension(100, 70));
-        timeLabel.setFont(font);
+        timeLabel.setFont(titlePanelFont);
+        timeLabel.setBorder(new LineBorder(Color.BLACK));
+        timeLabel.setToolTipText("Timer in seconds");
 
         updateBombCounter();
         lblBombCounter.setPreferredSize(new Dimension(100, 70));
         lblBombCounter.setHorizontalAlignment(JLabel.LEFT);
-        lblBombCounter.setFont(font);
+        lblBombCounter.setFont(titlePanelFont);
+        lblBombCounter.setBorder(new LineBorder(Color.BLACK));
+        lblBombCounter.setToolTipText("The number of bombs left");
 
-        var restartButton = new JButton("Restart");
-        restartButton.setPreferredSize(new Dimension(70, 70));
+        var restartButton = new JButton();
+        restartButton.setPreferredSize(new Dimension(100, 100));
+        Image resizedImage = resizeImage(restartImage, restartButton.getPreferredSize().width, restartButton.getPreferredSize().height);
+        restartButton.setIcon(new ImageIcon(resizedImage));
         restartButton.addActionListener(e -> restartGame());
+        restartButton.setBackground(new Color(238, 238, 238));
+        restartButton.setToolTipText("Restarts the game");
 
-        titlePanel.add(restartButton, BorderLayout.CENTER);
-        titlePanel.add(lblBombCounter, BorderLayout.WEST);
-        titlePanel.add(timeLabel, BorderLayout.EAST);
+        titlePanel.add(lblBombCounter);
+        titlePanel.add(restartButton);
+        titlePanel.add(timeLabel);
         titlePanel.setBorder(new EmptyBorder(0, 5, 0, 5));
 
         this.add(titlePanel, BorderLayout.NORTH);
+    }
+
+    private static Image resizeImage(BufferedImage originalImage, int width, int height) {
+        Image resizedImage = originalImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        BufferedImage bufferedResizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = bufferedResizedImage.createGraphics();
+        g.drawImage(resizedImage, 0, 0, width, height, null);
+        g.dispose();
+
+        return bufferedResizedImage;
     }
 
     private void updateBombCounter() {
