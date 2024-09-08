@@ -10,6 +10,7 @@ class MButton extends JButton {
     private int number;
     private boolean flagged = false;
     private boolean focused = false;
+    private final ResourceManager resourceManager = ResourceManager.getInstance();
 
     public void reset() {
         opened = false;
@@ -18,7 +19,8 @@ class MButton extends JButton {
         focused = false;
         number = 0;
         this.setText("");
-        this.setBackground(Color.gray);
+        this.setIcon(null);
+        this.setBackground(resourceManager.closedTile);
     }
 
     public MButton() {
