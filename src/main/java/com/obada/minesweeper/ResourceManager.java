@@ -1,4 +1,4 @@
-package game;
+package com.obada.minesweeper;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -6,16 +6,20 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class ResourceManager {
     private static ResourceManager instance = null;
 
     public static ResourceManager getInstance()
     {
+
         if(instance == null)
             instance = new ResourceManager();
         return instance;
     }
+
+    private static final String resourcesPath = "resources";
 
     private Font titlePanelFont = null;
     private Font tileFont = null;
@@ -41,29 +45,43 @@ public class ResourceManager {
 
     private ResourceManager() { loadResources(); }
 
-    private Font loadFont(String path, int size) throws IOException, FontFormatException {
-        File fontFile = new File(path);
-        Font font = Font.createFont(Font.TRUETYPE_FONT, fontFile);
-        return font.deriveFont(Font.BOLD, size);
-    }
-
     private void loadResources() {
         try {
-            titlePanelFont = loadFont("res/DS-DIGII.TTF", 50);
-            tileFont = loadFont("res/PressStart2P-Regular.ttf", 20);
+            titlePanelFont = loadFont("DS-DIGII.TTF", 50);
+            tileFont = loadFont("PressStart2P-Regular.ttf", 20);
 
-            flagImage = ImageIO.read(new File("res/flag.png"));
-            iconImage = ImageIO.read(new File("res/icon.png"));
-            bombImage = ImageIO.read(new File("res/bomb.png"));
-            restartGameImage = ImageIO.read(new File("res/coolFace.png"));
+            flagImage = loadImage("flag.png");
+            iconImage = loadImage("icon.png");
+            bombImage = loadImage("bomb.png");
+            restartGameImage = loadImage("coolFace.png");
         } catch (FontFormatException | IOException e) {
             JOptionPane.showMessageDialog(
                     null,
-                    "Could not load resources.\nThe jar file and the resources folder (res) should be in the same directory.",
+                    "Could not load resources. Error: " + e.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+
+    private Font loadFont(String path, int size) throws IOException, FontFormatException {
+        path = "fonts/" + path;
+        try (InputStream fontStream = getClass().getClassLoader().getResourceAsStream(path)) {
+            if(fontStream == null)
+                throw new IOException("Font not found: " + path);
+            Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream);
+            return font.deriveFont(Font.BOLD, size);
+        }
+    }
+
+    private BufferedImage loadImage(String path) throws IOException, FontFormatException {
+        path = "images/" + path;
+        try (InputStream imageStream = getClass().getClassLoader().getResourceAsStream(path)) {
+            if (imageStream == null) {
+                throw new IOException("Image not found: " + path);
+            }
+            return ImageIO.read(imageStream);
         }
     }
 

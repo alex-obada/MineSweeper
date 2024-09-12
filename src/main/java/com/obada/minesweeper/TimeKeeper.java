@@ -1,4 +1,4 @@
-package game;
+package com.obada.minesweeper;
 
 import java.util.Timer;
 import java.util.TimerTask;
