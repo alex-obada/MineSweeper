@@ -211,10 +211,11 @@ public class MainFrame extends JFrame {
     }
 
     private void revealBoard() {
+        boolean isWon = gridLen * gridLen - mineNumber == revealedCells;
         for(MButton[] array : buttons)
             for(MButton button : array) {
                 if(button.isOpened() || button.isFlagged()) continue;
-                if(gridLen * gridLen - mineNumber == revealedCells) {
+                if(isWon && button.isMine()) {
                     toggleFlagged(button);
                     continue;
                 }
