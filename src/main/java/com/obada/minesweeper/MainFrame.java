@@ -9,48 +9,71 @@ import javax.swing.border.LineBorder;
 
 public class MainFrame extends JFrame {
 
-    private final int gridLen = 16; // 16
-    private final int mineNumber = 40; // 40
-    private       int mineCounter = mineNumber;
+    private final int GRID_LENGTH = 16; // 16
+    private final int MINE_NUMBER = 40; // 40
+    private final int MINIMUM_SIZE_CHANGE = 10;
+    private       int mineCounter = MINE_NUMBER;
     private       int revealedCells = 0;
     final int[] dy = {-1, -1, 0, 1, 1,  1,  0, -1};
     final int[] dx = { 0,  1, 1, 1, 0, -1, -1, -1};
 
-    private final MButton[][] buttons = new MButton[gridLen][gridLen];
+    private final MButton[][] buttons = new MButton[GRID_LENGTH][GRID_LENGTH];
     private final JLabel lblMineCounter = new JLabel();
     private final JLabel timeLabel = new JLabel();
     private final JPanel buttonsPanel = new JPanel();
     private final JPanel titlePanel = new JPanel();
     private MouseEvent lastEvt;
-    private final TimeKeeper timeKeeper;
-    private final ResourceManager resourceManager;
+    private Dimension lastSize;
+    private TimeKeeper timeKeeper;
+    private final ResourceManager resourceManager = ResourceManager.getInstance();
     private ImageIcon mineIcon;
     private ImageIcon flagIcon;
 
     public MainFrame() throws HeadlessException {
         // debugging purposes
-        if(mineNumber > gridLen * gridLen) {
-            System.out.println(mineNumber + " mines cant fit in a " + gridLen + "x" + gridLen + " grid");
+        if(MINE_NUMBER > GRID_LENGTH * GRID_LENGTH) {
+            System.out.println(MINE_NUMBER + " mines cant fit in a " + GRID_LENGTH + "x" + GRID_LENGTH + " grid");
             System.exit(1);
         }
-        resourceManager = ResourceManager.getInstance();
+
         initFrame();
         initTitleBar();
         initButtons();
+        addWindowEventListeners();
+        lastSize = this.getSize();
+        timeKeeper = new TimeKeeper(time -> timeLabel.setText(formatNumber(time)));
+    }
+
+    private void addWindowEventListeners() {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e) {
                 updateButtonIcons();
             }
+
         });
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                updateButtonIcons();
-                updateButtonFonts();
+                if(shouldUpdateIcons()) {
+                    updateButtonFonts();
+                    updateButtonIcons();
+                }
             }
         });
-        timeKeeper = new TimeKeeper(time -> timeLabel.setText(formatNumber(time)));
+    }
+
+    private boolean shouldUpdateIcons() {
+        Dimension currentSize = this.getSize();
+        int widthChange = Math.abs(currentSize.width - lastSize.width);
+        int heightChange = Math.abs(currentSize.height - lastSize.height);
+        int sizeChange = Math.min(widthChange, heightChange);
+
+        if (sizeChange > MINIMUM_SIZE_CHANGE) {
+            lastSize = currentSize;
+            return true;
+        }
+        return false;
     }
 
     private void updateButtonFonts() {
@@ -81,7 +104,7 @@ public class MainFrame extends JFrame {
     }
 
     private void initButtons() {
-        buttonsPanel.setLayout(new GridLayout(gridLen, gridLen));
+        buttonsPanel.setLayout(new GridLayout(GRID_LENGTH, GRID_LENGTH));
 
         for(int y = 0; y < buttons.length; ++y) {
             for(int x = 0; x < buttons[y].length; ++x) {
@@ -201,7 +224,7 @@ public class MainFrame extends JFrame {
             for(MButton button : array)
                 button.reset();
 
-        mineCounter = mineNumber;
+        mineCounter = MINE_NUMBER;
         revealedCells = 0;
         updateMineCounter();
         generateMines();
@@ -211,7 +234,7 @@ public class MainFrame extends JFrame {
     }
 
     private void revealBoard() {
-        boolean isWon = gridLen * gridLen - mineNumber == revealedCells;
+        boolean isWon = GRID_LENGTH * GRID_LENGTH - MINE_NUMBER == revealedCells;
         for(MButton[] array : buttons)
             for(MButton button : array) {
                 if(button.isOpened() || button.isFlagged()) continue;
@@ -242,7 +265,7 @@ public class MainFrame extends JFrame {
     }
 
     private void checkFinish() {
-        if(revealedCells != gridLen * gridLen - mineNumber)
+        if(revealedCells != GRID_LENGTH * GRID_LENGTH - MINE_NUMBER)
             return;
 
         timeKeeper.stop();
@@ -263,10 +286,20 @@ public class MainFrame extends JFrame {
     }
 
     private boolean isInvalidCell(int y, int x) {
-        return y < 0 || y > gridLen - 1
-                || x < 0 || x > gridLen - 1;
+        return y < 0 || y > GRID_LENGTH - 1 || x < 0 || x > GRID_LENGTH - 1;
     }
 
+    /**
+     * Reveals the cells in the grid that are connected to the cell
+     * specified by the <code>x</code> and <code>y</code> coordinates
+     * and that have no mines in their 3x3 neighborhood. This method
+     * uses a recursive fill algorithm to reveal all contiguous
+     * cells with no mines. If the initial cell has a non-zero number
+     * of surrounding mines, only that cell will be revealed.
+     *
+     * @param y The row coordinate of the cell to start revealing.
+     * @param x The column coordinate of the cell to start revealing.
+     */
     private void revealClearSection(int y, int x) {
         if(isInvalidCell(y, x) || buttons[y][x].isOpened()) return;
         if(buttons[y][x].getNumber() != 0) {
@@ -363,13 +396,13 @@ public class MainFrame extends JFrame {
     }
 
     private void generateMines() {
-        int mines = mineNumber;
+        int mines = MINE_NUMBER;
         Random rand = new Random();
         Set<Point> controlSet = new HashSet<>();
 
         while(mines > 0) {
-            int x = rand.nextInt(gridLen);
-            int y = rand.nextInt(gridLen);
+            int x = rand.nextInt(GRID_LENGTH);
+            int y = rand.nextInt(GRID_LENGTH);
             Point p = new Point(y, x);
 
             if(!controlSet.contains(p)) {

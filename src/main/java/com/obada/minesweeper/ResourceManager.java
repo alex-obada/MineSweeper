@@ -10,15 +10,13 @@ import java.io.InputStream;
 public class ResourceManager {
     private static ResourceManager instance = null;
 
+    // I don't care about thread safety because it's just a simple game
     public static ResourceManager getInstance()
     {
-
         if(instance == null)
             instance = new ResourceManager();
         return instance;
     }
-
-    private static final String resourcesPath = "resources";
 
     private Font titlePanelFont = null;
     private Font cellFont = null;
@@ -69,6 +67,7 @@ public class ResourceManager {
         try(InputStream fontStream = getClass().getClassLoader().getResourceAsStream(path)) {
             if(fontStream == null)
                 throw new IOException("Font not found: " + path);
+
             Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream);
             return font.deriveFont(Font.BOLD, size);
         }
@@ -77,9 +76,9 @@ public class ResourceManager {
     private BufferedImage loadImage(String path) throws IOException, FontFormatException {
         path = "images/" + path;
         try(InputStream imageStream = getClass().getClassLoader().getResourceAsStream(path)) {
-            if(imageStream == null) {
+            if(imageStream == null)
                 throw new IOException("Image not found: " + path);
-            }
+
             return ImageIO.read(imageStream);
         }
     }
@@ -101,19 +100,20 @@ public class ResourceManager {
     }
 
     public static ImageIcon getResizedIcon(BufferedImage originalImage, JComponent component, boolean preferredSize) {
-        int width = component.getWidth();
-        int height = component.getHeight();
-        height = width = Math.min(height, width);
-
+        int width, height;
         if(preferredSize) {
             width = component.getPreferredSize().width;
             height = component.getPreferredSize().height;
+        } else {
+            width = component.getWidth();
+            height = component.getHeight();
         }
 
-        Image resizedImage = originalImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-        BufferedImage bufferedResizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        int size = Math.min(height, width);
+        Image resizedImage = originalImage.getScaledInstance(size, size, Image.SCALE_SMOOTH);
+        BufferedImage bufferedResizedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = bufferedResizedImage.createGraphics();
-        g.drawImage(resizedImage, 0, 0, width, height, null);
+        g.drawImage(resizedImage, 0, 0, size, size, null);
         g.dispose();
 
         return new ImageIcon(bufferedResizedImage);
