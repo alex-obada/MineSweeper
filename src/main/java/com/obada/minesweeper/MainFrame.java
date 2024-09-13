@@ -10,24 +10,29 @@ import javax.swing.border.LineBorder;
 public class MainFrame extends JFrame {
 
     private final int gridLen = 16; // 16
-    private final int bombNumber = 40; // 40
-    private       int bombCounter = bombNumber;
+    private final int mineNumber = 40; // 40
+    private       int mineCounter = mineNumber;
+    private       int revealedCells = 0;
     final int[] dy = {-1, -1, 0, 1, 1,  1,  0, -1};
     final int[] dx = { 0,  1, 1, 1, 0, -1, -1, -1};
 
     private final MButton[][] buttons = new MButton[gridLen][gridLen];
-    private final JLabel lblBombCounter = new JLabel();
+    private final JLabel lblMineCounter = new JLabel();
     private final JLabel timeLabel = new JLabel();
-    private final Container mainPanel = this.getContentPane();
     private final JPanel buttonsPanel = new JPanel();
     private final JPanel titlePanel = new JPanel();
     private MouseEvent lastEvt;
     private final TimeKeeper timeKeeper;
     private final ResourceManager resourceManager;
-    private ImageIcon bombIcon;
+    private ImageIcon mineIcon;
     private ImageIcon flagIcon;
 
     public MainFrame() throws HeadlessException {
+        // debugging purposes
+        if(mineNumber > gridLen * gridLen) {
+            System.out.println(mineNumber + " mines cant fit in a " + gridLen + "x" + gridLen + " grid");
+            System.exit(1);
+        }
         resourceManager = ResourceManager.getInstance();
         initFrame();
         initTitleBar();
@@ -49,14 +54,14 @@ public class MainFrame extends JFrame {
     }
 
     private void updateButtonFonts() {
-        resourceManager.updateTileFontToFit(buttons[0][0]);
+        resourceManager.updateCellFontToFit(buttons[0][0]);
         for (MButton[] buttonList : buttons)
             for (MButton button : buttonList)
-                button.setFont(resourceManager.getTileFont());
+                button.setFont(resourceManager.getCellFont());
     }
 
     private void updateButtonIcons() {
-        bombIcon = ResourceManager.getResizedIcon(resourceManager.getBombImage(), buttons[0][0], false);
+        mineIcon = ResourceManager.getResizedIcon(resourceManager.getMineImage(), buttons[0][0], false);
         flagIcon = ResourceManager.getResizedIcon(resourceManager.getFlagImage(), buttons[0][0], false);
         for (MButton[] buttonList : buttons)
             for (MButton button : buttonList)
@@ -83,11 +88,11 @@ public class MainFrame extends JFrame {
                 MButton button;
 
                 button = new MButton();
-                button.setBackground(resourceManager.closedTile);
-                button.setTileY(y);
-                button.setTileX(x);
+                button.setBackground(resourceManager.closedCell);
+                button.setCelleY(y);
+                button.setCellX(x);
                 button.setBorder(BorderFactory.createRaisedBevelBorder());
-                button.setFont(resourceManager.getTileFont());
+                button.setFont(resourceManager.getCellFont());
                 button.setFocusPainted(false);
                 addListenersToButton(button);
 
@@ -96,7 +101,7 @@ public class MainFrame extends JFrame {
             }
         }
 
-        generateBombs();
+        generateMines();
         generateNumbers();
 
         this.add(buttonsPanel);
@@ -105,7 +110,7 @@ public class MainFrame extends JFrame {
     private void generateNumbers() {
         for(int y = 0; y < buttons.length; ++y)
             for(int x = 0; x < buttons[y].length; ++x)
-                if(!buttons[y][x].isBomb()) {
+                if(!buttons[y][x].isMine()) {
                     int surroundingBombs = getSurroundingMinesCount(y, x);
                     buttons[y][x].setNumber(surroundingBombs);
                     buttons[y][x].setForeground(resourceManager.numberColors[surroundingBombs]);
@@ -123,12 +128,13 @@ public class MainFrame extends JFrame {
                 if(SwingUtilities.isLeftMouseButton(e)) {
                     if(b.isFlagged()) return;
 
-                    if(b.isBomb()) {
+                    if(b.isMine()) {
                         stopGame();
                     } else {
-                        revealClearSection(b.getTileY(), b.getTileX());
+                        revealClearSection(b.getCellY(), b.getCellX());
                     }
 
+                    checkFinish();
                 } else if(SwingUtilities.isRightMouseButton(e)
                             && lastEvt != e) {
                     toggleFlagged(b);
@@ -145,7 +151,7 @@ public class MainFrame extends JFrame {
                 }
                 b.setFocused(true);
 
-                setTilesColor(b, resourceManager.openedTile);
+                setCellColor(b, resourceManager.openedCell);
             }
 
             @Override
@@ -154,20 +160,20 @@ public class MainFrame extends JFrame {
                 if(!b.isOpened()) return;
                 if(!b.isFocused()) return;
                 b.setFocused(false);
-                setTilesColor(b, resourceManager.closedTile);
+                setCellColor(b, resourceManager.closedCell);
             }
         });
     }
 
-    private void setTilesColor(MButton b, Color c) {
-        int y = b.getTileY();
-        int x = b.getTileX();
+    private void setCellColor(MButton b, Color c) {
+        int y = b.getCellY();
+        int x = b.getCellX();
 
         for(int d = 0; d < 8; ++d) {
             int ny = y + dy[d];
             int nx = x + dx[d];
 
-            if(isInvalidTile(ny, nx)
+            if(isInvalidCell(ny, nx)
                 || buttons[ny][nx].isOpened()
                 || buttons[ny][nx].isFlagged())
                 continue;
@@ -195,9 +201,10 @@ public class MainFrame extends JFrame {
             for(MButton button : array)
                 button.reset();
 
-        bombCounter = bombNumber;
-        updateBombCounter();
-        generateBombs();
+        mineCounter = mineNumber;
+        revealedCells = 0;
+        updateMineCounter();
+        generateMines();
         generateNumbers();
         timeKeeper.stop();
         timeKeeper.resetTimer();
@@ -207,35 +214,35 @@ public class MainFrame extends JFrame {
         for(MButton[] array : buttons)
             for(MButton button : array) {
                 if(button.isOpened() || button.isFlagged()) continue;
-                showTile(button);
+                if(gridLen * gridLen - mineNumber == revealedCells) {
+                    toggleFlagged(button);
+                    continue;
+                }
+                revealCell(button);
             }
     }
 
     private void toggleFlagged(MButton b) {
         if(b.isOpened()) return;
         boolean flag = b.isFlagged();
-        if(!flag && bombCounter == 0)
+        if(!flag && mineCounter == 0)
             return;
 
         flag = !flag;
         b.setFlagged(flag);
         if(flag) {
             b.setIcon(flagIcon);
-            bombCounter--;
+            mineCounter--;
         } else {
             b.setIcon(null);
-            bombCounter++;
+            mineCounter++;
         }
-        updateBombCounter();
-        checkFinish();
+        updateMineCounter();
     }
 
     private void checkFinish() {
-        if(bombCounter != 0) return;
-        for(MButton[] array : buttons)
-            for(MButton button : array)
-                if(button.isBomb() && !button.isFlagged())
-                    return;
+        if(revealedCells != gridLen * gridLen - mineNumber)
+            return;
 
         timeKeeper.stop();
         revealBoard();
@@ -254,19 +261,19 @@ public class MainFrame extends JFrame {
         restartGame();
     }
 
-    private boolean isInvalidTile(int y, int x) {
+    private boolean isInvalidCell(int y, int x) {
         return y < 0 || y > gridLen - 1
                 || x < 0 || x > gridLen - 1;
     }
 
     private void revealClearSection(int y, int x) {
-        if(isInvalidTile(y, x) || buttons[y][x].isOpened()) return;
+        if(isInvalidCell(y, x) || buttons[y][x].isOpened()) return;
         if(buttons[y][x].getNumber() != 0) {
-            showTile(buttons[y][x]);
+            revealCell(buttons[y][x]);
             return;
         }
 
-        showTile(buttons[y][x]);
+        revealCell(buttons[y][x]);
         for(int d = 0; d < 8; ++d) {
             int ny = y + dy[d];
             int nx = x + dx[d];
@@ -274,18 +281,19 @@ public class MainFrame extends JFrame {
         }
     }
 
-    private void showTile(MButton b) {
+    private void revealCell(MButton b) {
         if(b.isOpened()) return;
         if(b.isFlagged()) return;
 
-        if(b.isBomb()) {
-            b.setBackground(resourceManager.bombBackground);
-            b.setIcon(bombIcon);
+        if(b.isMine()) {
+            b.setBackground(resourceManager.mineBackground);
+            b.setIcon(mineIcon);
             b.setOpened(true);
             return;
         }
 
-        b.setBackground(resourceManager.openedTile);
+        revealedCells++;
+        b.setBackground(resourceManager.openedCell);
         b.setText(b.getNumber() != 0 ? b.getNumber() + "" : "");
         b.setOpened(true);
     }
@@ -298,9 +306,9 @@ public class MainFrame extends JFrame {
             int nx = x + dx[d];
 
             // out of bounds check
-            if(isInvalidTile(ny, nx)) continue;
+            if(isInvalidCell(ny, nx)) continue;
 
-            if(buttons[ny][nx].isBomb())
+            if(buttons[ny][nx].isMine())
                 count++;
         }
 
@@ -317,22 +325,22 @@ public class MainFrame extends JFrame {
         timeLabel.setBorder(new LineBorder(Color.BLACK));
         timeLabel.setToolTipText("Timer in seconds");
 
-        updateBombCounter();
-        lblBombCounter.setPreferredSize(new Dimension(100, 70));
-        lblBombCounter.setHorizontalAlignment(JLabel.LEFT);
-        lblBombCounter.setFont(resourceManager.getTitlePanelFont());
-        lblBombCounter.setBorder(new LineBorder(Color.BLACK));
-        lblBombCounter.setToolTipText("The number of bombs left");
+        updateMineCounter();
+        lblMineCounter.setPreferredSize(new Dimension(100, 70));
+        lblMineCounter.setHorizontalAlignment(JLabel.LEFT);
+        lblMineCounter.setFont(resourceManager.getTitlePanelFont());
+        lblMineCounter.setBorder(new LineBorder(Color.BLACK));
+        lblMineCounter.setToolTipText("The number of mines left");
 
         var restartButton = new JButton();
         restartButton.setPreferredSize(new Dimension(100, 100));
         restartButton.setIcon(ResourceManager.getResizedIcon(resourceManager.getRestartGameImage(), restartButton, true));
         restartButton.addActionListener(e -> restartGame());
-        restartButton.setToolTipText("Restarts the com.obada.game");
+        restartButton.setToolTipText("Restarts the game");
         restartButton.setFocusPainted(false);
         restartButton.setBorder(new LineBorder(Color.BLACK));
 
-        titlePanel.add(lblBombCounter);
+        titlePanel.add(lblMineCounter);
         titlePanel.add(restartButton);
         titlePanel.add(timeLabel);
         titlePanel.setBorder(new EmptyBorder(0, 5, 0, 5));
@@ -340,8 +348,8 @@ public class MainFrame extends JFrame {
         this.add(titlePanel, BorderLayout.NORTH);
     }
 
-    private void updateBombCounter() {
-        lblBombCounter.setText(formatNumber(bombCounter));
+    private void updateMineCounter() {
+        lblMineCounter.setText(formatNumber(mineCounter));
     }
 
     String formatNumber(int number) {
@@ -353,21 +361,21 @@ public class MainFrame extends JFrame {
         return text + number;
     }
 
-    private void generateBombs() {
-        int bombs = bombNumber;
+    private void generateMines() {
+        int mines = mineNumber;
         Random rand = new Random();
         Set<Point> controlSet = new HashSet<>();
 
-        while(bombs > 0) {
+        while(mines > 0) {
             int x = rand.nextInt(gridLen);
             int y = rand.nextInt(gridLen);
             Point p = new Point(y, x);
 
             if(!controlSet.contains(p)) {
 
-                buttons[y][x].setBomb(true);
+                buttons[y][x].setMine(true);
                 buttons[y][x].setNumber(-1);
-                bombs--;
+                mines--;
                 controlSet.add(p);
             }
         }

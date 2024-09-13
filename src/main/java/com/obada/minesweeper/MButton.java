@@ -4,8 +4,8 @@ import javax.swing.JButton;
 
 class MButton extends JButton {
     private boolean opened = false;
-    private boolean bomb;
-    private int tileY, tileX;
+    private boolean mine;
+    private int cellY, cellX;
     private int number;
     private boolean flagged = false;
     private boolean focused = false;
@@ -13,13 +13,13 @@ class MButton extends JButton {
 
     public void reset() {
         opened = false;
-        bomb = false;
+        mine = false;
         flagged = false;
         focused = false;
         number = 0;
         this.setText("");
         this.setIcon(null);
-        this.setBackground(resourceManager.closedTile);
+        this.setBackground(resourceManager.closedCell);
     }
 
     public MButton() {
@@ -50,20 +50,20 @@ class MButton extends JButton {
         this.number = number;
     }
 
-    public boolean isBomb() {
-        return bomb;
+    public boolean isMine() {
+        return mine;
     }
 
-    public void setBomb(boolean bomb) {
-        this.bomb = bomb;
+    public void setMine(boolean mine) {
+        this.mine = mine;
     }
 
-    public int getTileX() {
-        return tileX;
+    public int getCellX() {
+        return cellX;
     }
 
-    public int getTileY() {
-        return tileY;
+    public int getCellY() {
+        return cellY;
     }
 
     public boolean isOpened() {
@@ -74,11 +74,11 @@ class MButton extends JButton {
         this.opened = opened;
     }
 
-    public void setTileX(int x) {
-        this.tileX = x;
+    public void setCellX(int x) {
+        this.cellX = x;
     }
 
-    public void setTileY(int y) {
-        this.tileY = y;
+    public void setCelleY(int y) {
+        this.cellY = y;
     }
 }

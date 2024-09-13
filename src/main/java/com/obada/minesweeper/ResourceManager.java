@@ -4,7 +4,6 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -22,15 +21,15 @@ public class ResourceManager {
     private static final String resourcesPath = "resources";
 
     private Font titlePanelFont = null;
-    private Font tileFont = null;
+    private Font cellFont = null;
     private BufferedImage iconImage = null;
     private BufferedImage flagImage = null;
-    private BufferedImage bombImage = null;
+    private BufferedImage mineImage = null;
     private BufferedImage restartGameImage = null;
 
-    public final Color bombBackground = Color.red;
-    public final Color openedTile = Color.white;
-    public final Color closedTile = Color.gray;
+    public final Color mineBackground = Color.red;
+    public final Color openedCell = Color.white;
+    public final Color closedCell = Color.gray;
     public final Color[] numberColors = new Color[] {
             new Color(0xffffffff),
             new Color(26, 23, 249),
@@ -48,11 +47,11 @@ public class ResourceManager {
     private void loadResources() {
         try {
             titlePanelFont = loadFont("DS-DIGII.TTF", 50);
-            tileFont = loadFont("PressStart2P-Regular.ttf", 20);
+            cellFont = loadFont("PressStart2P-Regular.ttf", 20);
 
             flagImage = loadImage("flag.png");
             iconImage = loadImage("icon.png");
-            bombImage = loadImage("bomb.png");
+            mineImage = loadImage("mine.png");
             restartGameImage = loadImage("coolFace.png");
         } catch (FontFormatException | IOException e) {
             JOptionPane.showMessageDialog(
@@ -67,7 +66,7 @@ public class ResourceManager {
 
     private Font loadFont(String path, int size) throws IOException, FontFormatException {
         path = "fonts/" + path;
-        try (InputStream fontStream = getClass().getClassLoader().getResourceAsStream(path)) {
+        try(InputStream fontStream = getClass().getClassLoader().getResourceAsStream(path)) {
             if(fontStream == null)
                 throw new IOException("Font not found: " + path);
             Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream);
@@ -77,15 +76,15 @@ public class ResourceManager {
 
     private BufferedImage loadImage(String path) throws IOException, FontFormatException {
         path = "images/" + path;
-        try (InputStream imageStream = getClass().getClassLoader().getResourceAsStream(path)) {
-            if (imageStream == null) {
+        try(InputStream imageStream = getClass().getClassLoader().getResourceAsStream(path)) {
+            if(imageStream == null) {
                 throw new IOException("Image not found: " + path);
             }
             return ImageIO.read(imageStream);
         }
     }
 
-    public void updateTileFontToFit(JComponent component) {
+    public void updateCellFontToFit(JComponent component) {
         int width = component.getWidth();
         int height = component.getHeight();
 
@@ -98,7 +97,7 @@ public class ResourceManager {
         54 50
          */
         // good enough approximation
-        tileFont = tileFont.deriveFont(Font.BOLD, Math.min(width, height) - 10);
+        cellFont = cellFont.deriveFont(Font.BOLD, Math.min(width, height) - 10);
     }
 
     public static ImageIcon getResizedIcon(BufferedImage originalImage, JComponent component, boolean preferredSize) {
@@ -124,8 +123,8 @@ public class ResourceManager {
         return titlePanelFont;
     }
 
-    public Font getTileFont() {
-        return tileFont;
+    public Font getCellFont() {
+        return cellFont;
     }
 
     public BufferedImage getIconImage() {
@@ -136,8 +135,8 @@ public class ResourceManager {
         return flagImage;
     }
 
-    public BufferedImage getBombImage() {
-        return bombImage;
+    public BufferedImage getMineImage() {
+        return mineImage;
     }
 
     public BufferedImage getRestartGameImage() {
