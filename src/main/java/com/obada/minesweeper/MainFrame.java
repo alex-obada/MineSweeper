@@ -24,7 +24,7 @@ public class MainFrame extends JFrame {
     private final JPanel titlePanel = new JPanel();
     private MouseEvent lastEvt;
     private Dimension lastSize;
-    private TimeKeeper timeKeeper;
+    private final TimeKeeper timeKeeper;
     private final ResourceManager resourceManager = ResourceManager.getInstance();
     private ImageIcon mineIcon;
     private ImageIcon flagIcon;
